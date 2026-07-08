@@ -48,7 +48,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // CPU fraction (of one core) the GPT processes must average between two
     // checks to count as working. Measured: idle ≤1.3% (UI noise with the
     // window open), streaming a response 23–66%.
-    private let gptCpuRate = Double(ProcessInfo.processInfo.environment["STAYAWAKE_GPT_CPU_RATE"] ?? "") ?? 0.05
+    private let gptCpuRate = Double(ProcessInfo.processInfo.environment["STAYAWAKE_GPT_CPU_RATE"] ?? "") ?? 0.10
     // CPU watch for the Claude desktop app. Off by default: measured on a
     // real machine, Claude.app hums at ~0.6 cores even when fully idle
     // (renderer + helper), so CPU can't separate idle from streaming.

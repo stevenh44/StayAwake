@@ -75,7 +75,7 @@ Environment variables, all optional:
 |---|---|---|
 | `STAYAWAKE_IDLE_SECS` | `600` | How long after the last activity signal to keep the screen awake |
 | `STAYAWAKE_CHECK_SECS` | `30` | Poll interval |
-| `STAYAWAKE_GPT_CPU_RATE` | `0.05` | CPU fraction (of one core) GPT processes must average to count as working |
+| `STAYAWAKE_GPT_CPU_RATE` | `0.10` | CPU fraction (of one core) GPT processes must average to count as working |
 | `STAYAWAKE_GPT_PATTERN` | `codex,chatgpt` | Comma-separated process-name needles for the GPT CPU detector |
 | `STAYAWAKE_CLAUDE_PATTERN` | *(empty — disabled)* | Process-name needle for the Claude desktop app CPU detector; set to `claude` to enable |
 | `STAYAWAKE_SCAN_DIR` | `~/.claude/projects` | Claude transcript directory |
