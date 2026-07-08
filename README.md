@@ -46,6 +46,8 @@ open StayAwake.app
 
 Requires macOS 12+ and Xcode Command Line Tools (`xcode-select --install`). To start it at login: System Settings → General → Login Items → add StayAwake.
 
+To produce an installable disk image instead, run `./make-dmg.sh` — it builds `dist/StayAwake.dmg` with the usual drag-to-Applications layout. Note the app is ad-hoc signed: if you download the DMG (rather than building it locally), macOS quarantines it and you'll need right-click → Open the first time, or `xattr -dr com.apple.quarantine /Applications/StayAwake.app`.
+
 ### Cursor hooks (optional, for Cursor detection)
 
 ```bash
@@ -58,7 +60,7 @@ Restart Cursor afterwards — it only reads `hooks.json` at startup.
 
 ## Usage log
 
-StayAwake appends to `usage.csv` next to the app in 15-minute buckets, pruned to 90 days:
+StayAwake appends to `~/Documents/StayAwake/usage.csv` in 15-minute buckets, pruned to 90 days:
 
 ```csv
 bucket,checks,awake,claude,gpt,cursor

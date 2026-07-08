@@ -100,10 +100,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 disc.stroke()
             }
             let text = emoji as NSString
-            let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: side * (circle ? 0.6 : 0.75))]
+            let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: side * (circle ? 0.44 : 0.75))]
             let textSize = text.size(withAttributes: attrs)
-            text.draw(at: NSPoint(x: rect.midX - textSize.width / 2,
-                                  y: rect.midY - textSize.height / 2),
+            // The 💤 glyph is visually weighted top-right; bias it back to center.
+            let bias: CGFloat = circle ? side * 0.02 : 0
+            text.draw(at: NSPoint(x: rect.midX - textSize.width / 2 - bias,
+                                  y: rect.midY - textSize.height / 2 - bias),
                       withAttributes: attrs)
             return true
         }

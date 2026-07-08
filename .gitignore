@@ -4,6 +4,7 @@ usage.csv
 # Build artifacts
 StayAwake.app/
 AppIcon.icns
+dist/
 AppIcon.iconset/
 icon_1024.png
 
