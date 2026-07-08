@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      { "command": "./hooks/stayawake-heartbeat.sh" }
+    ],
+    "beforeSubmitPrompt": [
+      { "command": "./hooks/stayawake-heartbeat.sh" }
+    ],
+    "afterAgentThought": [
+      { "command": "./hooks/stayawake-heartbeat.sh" }
+    ],
+    "afterAgentResponse": [
+      { "command": "./hooks/stayawake-heartbeat.sh" }
+    ],
+    "postToolUse": [
+      { "command": "./hooks/stayawake-heartbeat.sh" }
+    ]
+  }
+}

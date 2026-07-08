@@ -1,0 +1,11 @@
+# Personal usage data — regenerated automatically, never commit
+usage.csv
+
+# Build artifacts
+StayAwake.app/
+AppIcon.icns
+AppIcon.iconset/
+icon_1024.png
+
+# macOS
+.DS_Store
