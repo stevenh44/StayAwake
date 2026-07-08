@@ -60,7 +60,7 @@ Restart Cursor afterwards — it only reads `hooks.json` at startup.
 
 ## Usage log
 
-StayAwake appends to `~/Documents/StayAwake/usage.csv` in 15-minute buckets, pruned to 90 days:
+StayAwake appends to `~/Library/Application Support/StayAwake/usage.csv` in 15-minute buckets, pruned to 90 days (the Open Usage Log menu item takes you straight there):
 
 ```csv
 bucket,checks,awake,claude,gpt,cursor
@@ -83,7 +83,7 @@ Environment variables, all optional:
 | `STAYAWAKE_CLAUDE_CPU_MARGIN` | `0.15` | How far (cores) Claude.app CPU must rise above its rolling baseline to count as working |
 | `STAYAWAKE_SCAN_DIR` | `~/.claude/projects` | Claude transcript directory |
 | `STAYAWAKE_CURSOR_HEARTBEAT` | `~/.cursor/state/stayawake.heartbeat` | Cursor heartbeat file |
-| `STAYAWAKE_USAGE_FILE` | `<app dir>/usage.csv` | Usage log location |
+| `STAYAWAKE_USAGE_FILE` | `~/Library/Application Support/StayAwake/usage.csv` | Usage log location |
 
 ## Caveats
 

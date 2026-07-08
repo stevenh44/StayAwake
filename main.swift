@@ -62,7 +62,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let cursorHeartbeat = ProcessInfo.processInfo.environment["STAYAWAKE_CURSOR_HEARTBEAT"]
         ?? (NSHomeDirectory() + "/.cursor/state/stayawake.heartbeat")
     private let usageFile = ProcessInfo.processInfo.environment["STAYAWAKE_USAGE_FILE"]
-        ?? (NSHomeDirectory() + "/Documents/StayAwake/usage.csv")
+        ?? (NSHomeDirectory() + "/Library/Application Support/StayAwake/usage.csv")
     private let debugStatus = CommandLine.arguments.contains("--debug-status")
 
     private var prevGptCpu: Double?
@@ -133,6 +133,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.delegate = self
         statusItem.menu = menu
 
+        migrateLegacyUsageFile()
         loadUsage()
         let timer = Timer.scheduledTimer(withTimeInterval: checkInterval, repeats: true) { [weak self] _ in
             self?.check()
@@ -389,6 +390,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let awakeChecks = usage.filter { $0.bucket.hasPrefix(dayPrefix) }.reduce(0) { $0 + $1.awake }
         let seconds = Double(awakeChecks) * checkInterval
         return (seconds, seconds / 86400 * 100)
+    }
+
+    /// Versions ≤1.0.1 kept the usage log in ~/Documents/StayAwake; move it
+    /// to Application Support once so no history is lost.
+    private func migrateLegacyUsageFile() {
+        let fm = FileManager.default
+        let legacy = NSHomeDirectory() + "/Documents/StayAwake/usage.csv"
+        guard !fm.fileExists(atPath: usageFile), fm.fileExists(atPath: legacy) else { return }
+        try? fm.createDirectory(atPath: (usageFile as NSString).deletingLastPathComponent,
+                                withIntermediateDirectories: true)
+        try? fm.moveItem(atPath: legacy, toPath: usageFile)
     }
 
     private func loadUsage() {
