@@ -78,9 +78,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     private var usage: [UsageRow] = []
 
+    private static let awakeIcon = statusIcon("☕️")
+    private static let sleepIcon = statusIcon("💤")
+
+    /// Emoji on a white circle so the indicator stays readable on
+    /// transparent/wallpaper-tinted menu bars.
+    private static func statusIcon(_ emoji: String, side: CGFloat = 20) -> NSImage {
+        let size = NSSize(width: side, height: side)
+        return NSImage(size: size, flipped: false) { rect in
+            let circle = NSBezierPath(ovalIn: rect.insetBy(dx: side * 0.025, dy: side * 0.025))
+            NSColor.white.setFill()
+            circle.fill()
+            NSColor.black.withAlphaComponent(0.2).setStroke()
+            circle.lineWidth = max(1, side * 0.05)
+            circle.stroke()
+            let text = emoji as NSString
+            let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: side * 0.6)]
+            let textSize = text.size(withAttributes: attrs)
+            text.draw(at: NSPoint(x: rect.midX - textSize.width / 2,
+                                  y: rect.midY - textSize.height / 2),
+                      withAttributes: attrs)
+            return true
+        }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if CommandLine.arguments.contains("--render-icons") {
+            for (name, icon) in [("awake", Self.statusIcon("☕️", side: 100)),
+                                 ("sleep", Self.statusIcon("💤", side: 100))] {
+                let rep = NSBitmapImageRep(data: icon.tiffRepresentation!)!
+                try? rep.representation(using: .png, properties: [:])?
+                    .write(to: URL(fileURLWithPath: "icon-\(name).png"))
+            }
+            NSApp.terminate(nil)
+        }
+
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.title = "💤"
+        statusItem.button?.image = Self.sleepIcon
         menu.delegate = self
         statusItem.menu = menu
 
@@ -206,7 +240,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let cursorIdle = cursorBeat.map { now.timeIntervalSince($0) } ?? .infinity
         let working = min(claudeIdle, gptIdle, cursorIdle) < idleThreshold
         setBlocking(working)
-        statusItem.button?.title = working ? "☕️" : "💤"
+        statusItem.button?.image = working ? Self.awakeIcon : Self.sleepIcon
 
         recordUsage(awake: working,
                     claude: claudeIdle < idleThreshold,
