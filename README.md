@@ -29,7 +29,7 @@ There's no universal "AI is working" API, so each tool gets the most reliable si
 
 | Tool | Signal |
 |---|---|
-| **Claude** | Claude Code writes session transcripts (`~/.claude/projects/**/*.jsonl`) continuously — fresh write = working. Regular (non-Code) desktop-app chats have no clean signal: the app writes nothing to disk while streaming, and its idle CPU can hum high enough to defeat a CPU detector — so that watch is **off by default** (`STAYAWAKE_CLAUDE_PATTERN=claude` opts in if your Claude.app idles quietly). Cloud-side chats survive your Mac sleeping anyway. |
+| **Claude** | Claude Code writes session transcripts (`~/.claude/projects/**/*.jsonl`) continuously — fresh write = working. Regular (non-Code) desktop-app chats are caught by a **baseline-relative** CPU watch: some Claude.app installs hum at ~0.6 cores while idle, so instead of an absolute threshold, "working" means CPU rises `0.15` cores above the machine's own rolling 20-minute minimum. Healthy installs detect streaming easily; humming installs simply stay quiet rather than false-flagging. |
 | **ChatGPT app / Codex** | Its log files heartbeat even when idle, so file times are useless — but CPU is ~0% idle and 20–60%+ while streaming. StayAwake measures CPU-time growth of `chatgpt`/`codex` processes between checks. |
 | **Cursor agents** | [Cursor hooks](https://cursor.com/docs) touch a heartbeat file on every agent event (prompt submitted, thought, response, tool use). Fresh heartbeat = working. Manual editing in Cursor does **not** keep the Mac awake. |
 
@@ -79,7 +79,8 @@ Environment variables, all optional:
 | `STAYAWAKE_CHECK_SECS` | `30` | Poll interval |
 | `STAYAWAKE_GPT_CPU_RATE` | `0.10` | CPU fraction (of one core) GPT processes must average to count as working |
 | `STAYAWAKE_GPT_PATTERN` | `codex,chatgpt` | Comma-separated process-name needles for the GPT CPU detector |
-| `STAYAWAKE_CLAUDE_PATTERN` | *(empty — disabled)* | Process-name needle for the Claude desktop app CPU detector; set to `claude` to enable |
+| `STAYAWAKE_CLAUDE_PATTERN` | `claude` | Process-name needle for the Claude desktop app CPU detector; set empty to disable |
+| `STAYAWAKE_CLAUDE_CPU_MARGIN` | `0.15` | How far (cores) Claude.app CPU must rise above its rolling baseline to count as working |
 | `STAYAWAKE_SCAN_DIR` | `~/.claude/projects` | Claude transcript directory |
 | `STAYAWAKE_CURSOR_HEARTBEAT` | `~/.cursor/state/stayawake.heartbeat` | Cursor heartbeat file |
 | `STAYAWAKE_USAGE_FILE` | `<app dir>/usage.csv` | Usage log location |

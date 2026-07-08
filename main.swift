@@ -49,11 +49,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // checks to count as working. Measured: idle ≤1.3% (UI noise with the
     // window open), streaming a response 23–66%.
     private let gptCpuRate = Double(ProcessInfo.processInfo.environment["STAYAWAKE_GPT_CPU_RATE"] ?? "") ?? 0.10
-    // CPU watch for the Claude desktop app. Off by default: measured on a
-    // real machine, Claude.app hums at ~0.6 cores even when fully idle
-    // (renderer + helper), so CPU can't separate idle from streaming.
-    // Set STAYAWAKE_CLAUDE_PATTERN=claude to opt in anyway.
-    private let claudePattern = ProcessInfo.processInfo.environment["STAYAWAKE_CLAUDE_PATTERN"] ?? ""
+    // CPU watch for the Claude desktop app. Unlike the GPT watch this one is
+    // baseline-relative: some Claude.app installs hum at ~0.6 cores while
+    // fully idle (stuck renderer/helper), so an absolute threshold either
+    // false-flags those machines or misses real chats on healthy ones.
+    // "Working" = rate rises `claudeCpuMargin` above the machine's own
+    // rolling 20-minute minimum. Healthy install: baseline ≈ 0, streaming
+    // 0.3–0.6 triggers easily. Humming install: baseline ≈ 0.6, idle jitter
+    // ≈ ±0.05 stays under the margin, so it just goes quiet (no false ☕️).
+    private let claudePattern = ProcessInfo.processInfo.environment["STAYAWAKE_CLAUDE_PATTERN"] ?? "claude"
+    private let claudeCpuMargin = Double(ProcessInfo.processInfo.environment["STAYAWAKE_CLAUDE_CPU_MARGIN"] ?? "") ?? 0.15
     private let cursorHeartbeat = ProcessInfo.processInfo.environment["STAYAWAKE_CURSOR_HEARTBEAT"]
         ?? (NSHomeDirectory() + "/.cursor/state/stayawake.heartbeat")
     private let usageFile = ProcessInfo.processInfo.environment["STAYAWAKE_USAGE_FILE"]
@@ -64,6 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var prevGptSample: Date?
     private var lastGptActive: Date?
     private var prevClaudeCpu: Double?
+    private var claudeRateWindow: [Double] = []
     private var lastClaudeAppActive: Date?
     private var claudeLast: Date?
     private var cursorLast: Date?
@@ -232,7 +238,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 }
                 if let prevCpu = prevClaudeCpu {
                     claudeRate = max(0, claudeCpu - prevCpu) / elapsed
-                    if claudeRate >= gptCpuRate { lastClaudeAppActive = now }
+                    let baseline = claudeRateWindow.min() ?? claudeRate
+                    if claudeRate > baseline + claudeCpuMargin { lastClaudeAppActive = now }
+                    claudeRateWindow.append(claudeRate)
+                    let windowSize = max(2, Int(1200 / checkInterval)) // ~20 minutes
+                    if claudeRateWindow.count > windowSize { claudeRateWindow.removeFirst() }
                 }
             }
         }
@@ -259,6 +269,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if debugStatus {
             log("CHECK working=\(working) claudeIdle=\(Self.describeAgo(claudeIdle)) " +
                 "claudeRate=\(String(format: "%.3f", claudeRate)) " +
+                "claudeBase=\(String(format: "%.3f", claudeRateWindow.min() ?? -1)) " +
                 "gptIdle=\(Self.describeAgo(gptIdle)) gptRate=\(String(format: "%.3f", gptRate)) " +
                 "cursorIdle=\(Self.describeAgo(cursorIdle))")
         }
