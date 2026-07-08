@@ -49,8 +49,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // checks to count as working. Measured: idle ≤1.3% (UI noise with the
     // window open), streaming a response 23–66%.
     private let gptCpuRate = Double(ProcessInfo.processInfo.environment["STAYAWAKE_GPT_CPU_RATE"] ?? "") ?? 0.05
-    // Matches the Claude desktop app and the claude CLI.
-    private let claudePattern = ProcessInfo.processInfo.environment["STAYAWAKE_CLAUDE_PATTERN"] ?? "claude"
+    // CPU watch for the Claude desktop app. Off by default: measured on a
+    // real machine, Claude.app hums at ~0.6 cores even when fully idle
+    // (renderer + helper), so CPU can't separate idle from streaming.
+    // Set STAYAWAKE_CLAUDE_PATTERN=claude to opt in anyway.
+    private let claudePattern = ProcessInfo.processInfo.environment["STAYAWAKE_CLAUDE_PATTERN"] ?? ""
     private let cursorHeartbeat = ProcessInfo.processInfo.environment["STAYAWAKE_CURSOR_HEARTBEAT"]
         ?? (NSHomeDirectory() + "/.cursor/state/stayawake.heartbeat")
     private let usageFile = ProcessInfo.processInfo.environment["STAYAWAKE_USAGE_FILE"]
@@ -145,7 +148,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let lastWrite = Self.lastTranscriptWrite(in: dir)
             let ps = Self.processList()
             let gptCpu = Self.totalCpuSeconds(psOutput: ps, processPattern: pattern)
-            let claudeCpu = Self.totalCpuSeconds(psOutput: ps, processPattern: claudePat)
+            let claudeCpu = claudePat.isEmpty ? 0 : Self.totalCpuSeconds(psOutput: ps, processPattern: claudePat)
             let cursorBeat = (try? FileManager.default.attributesOfItem(atPath: heartbeat))?[.modificationDate] as? Date
             DispatchQueue.main.async {
                 self?.apply(lastWrite: lastWrite, gptCpu: gptCpu, claudeCpu: claudeCpu, cursorBeat: cursorBeat)
