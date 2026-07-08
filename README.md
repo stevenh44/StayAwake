@@ -29,7 +29,7 @@ There's no universal "AI is working" API, so each tool gets the most reliable si
 
 | Tool | Signal |
 |---|---|
-| **Claude Code** | Writes to its session transcripts (`~/.claude/projects/**/*.jsonl`) continuously while working. Fresh write = working. |
+| **Claude** | Claude Code writes session transcripts (`~/.claude/projects/**/*.jsonl`) continuously — fresh write = working. Regular (non-Code) desktop-app chats are caught by CPU-time growth in Claude.app processes while a response streams. |
 | **ChatGPT app / Codex** | Its log files heartbeat even when idle, so file times are useless — but CPU is ~0% idle and 20–60%+ while streaming. StayAwake measures CPU-time growth of `chatgpt`/`codex` processes between checks. |
 | **Cursor agents** | [Cursor hooks](https://cursor.com/docs) touch a heartbeat file on every agent event (prompt submitted, thought, response, tool use). Fresh heartbeat = working. Manual editing in Cursor does **not** keep the Mac awake. |
 
@@ -76,7 +76,8 @@ Environment variables, all optional:
 | `STAYAWAKE_IDLE_SECS` | `600` | How long after the last activity signal to keep the screen awake |
 | `STAYAWAKE_CHECK_SECS` | `30` | Poll interval |
 | `STAYAWAKE_GPT_CPU_RATE` | `0.05` | CPU fraction (of one core) GPT processes must average to count as working |
-| `STAYAWAKE_GPT_PATTERN` | `codex,chatgpt` | Comma-separated process-name needles for the CPU detector |
+| `STAYAWAKE_GPT_PATTERN` | `codex,chatgpt` | Comma-separated process-name needles for the GPT CPU detector |
+| `STAYAWAKE_CLAUDE_PATTERN` | `claude` | Process-name needle for the Claude desktop app CPU detector |
 | `STAYAWAKE_SCAN_DIR` | `~/.claude/projects` | Claude transcript directory |
 | `STAYAWAKE_CURSOR_HEARTBEAT` | `~/.cursor/state/stayawake.heartbeat` | Cursor heartbeat file |
 | `STAYAWAKE_USAGE_FILE` | `<app dir>/usage.csv` | Usage log location |

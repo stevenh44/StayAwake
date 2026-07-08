@@ -15,7 +15,9 @@ private func envSeconds(_ key: String, default def: TimeInterval) -> TimeInterva
 //
 // Claude: Claude Code appends to a session transcript
 //   (~/.claude/projects/**/*.jsonl) continuously while it works, so a recent
-//   write means "Claude is running".
+//   write means "Claude is running". Regular (non-Code) chats in the Claude
+//   desktop app don't write transcripts, so those are covered the same way
+//   as GPT: CPU-time growth in Claude.app processes while streaming.
 // GPT: the Codex app-server heartbeats its log file even when idle, so file
 //   times are useless — but its CPU usage is 0.0% idle and jumps when it
 //   actually works, so "working" = its processes accumulated CPU time since
@@ -47,6 +49,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // checks to count as working. Measured: idle ≤1.3% (UI noise with the
     // window open), streaming a response 23–66%.
     private let gptCpuRate = Double(ProcessInfo.processInfo.environment["STAYAWAKE_GPT_CPU_RATE"] ?? "") ?? 0.05
+    // Matches the Claude desktop app and the claude CLI.
+    private let claudePattern = ProcessInfo.processInfo.environment["STAYAWAKE_CLAUDE_PATTERN"] ?? "claude"
     private let cursorHeartbeat = ProcessInfo.processInfo.environment["STAYAWAKE_CURSOR_HEARTBEAT"]
         ?? (NSHomeDirectory() + "/.cursor/state/stayawake.heartbeat")
     private let usageFile = ProcessInfo.processInfo.environment["STAYAWAKE_USAGE_FILE"]
@@ -56,6 +60,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var prevGptCpu: Double?
     private var prevGptSample: Date?
     private var lastGptActive: Date?
+    private var prevClaudeCpu: Double?
+    private var lastClaudeAppActive: Date?
     private var claudeLast: Date?
     private var cursorLast: Date?
     private let launchTime = Date()
@@ -95,14 +101,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func check() {
         let dir = scanDir
         let pattern = gptPattern
+        let claudePat = claudePattern
         let heartbeat = cursorHeartbeat
         DispatchQueue.global(qos: .utility).async { [weak self] in
             let lastWrite = Self.lastTranscriptWrite(in: dir)
             let ps = Self.processList()
             let gptCpu = Self.totalCpuSeconds(psOutput: ps, processPattern: pattern)
+            let claudeCpu = Self.totalCpuSeconds(psOutput: ps, processPattern: claudePat)
             let cursorBeat = (try? FileManager.default.attributesOfItem(atPath: heartbeat))?[.modificationDate] as? Date
             DispatchQueue.main.async {
-                self?.apply(lastWrite: lastWrite, gptCpu: gptCpu, cursorBeat: cursorBeat)
+                self?.apply(lastWrite: lastWrite, gptCpu: gptCpu, claudeCpu: claudeCpu, cursorBeat: cursorBeat)
             }
         }
     }
@@ -166,24 +174,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return days * 86400 + seconds
     }
 
-    private func apply(lastWrite: Date?, gptCpu: Double, cursorBeat: Date?) {
+    private func apply(lastWrite: Date?, gptCpu: Double, claudeCpu: Double, cursorBeat: Date?) {
         let now = Date()
 
-        // GPT: did its processes burn CPU since the last sample?
+        // GPT / Claude.app: did their processes burn CPU since the last sample?
         var gptRate = 0.0
-        if let prevCpu = prevGptCpu, let prevTime = prevGptSample {
+        var claudeRate = 0.0
+        if let prevTime = prevGptSample {
             let elapsed = now.timeIntervalSince(prevTime)
             if elapsed > 1 {
-                gptRate = max(0, gptCpu - prevCpu) / elapsed
-                if gptRate >= gptCpuRate { lastGptActive = now }
+                if let prevCpu = prevGptCpu {
+                    gptRate = max(0, gptCpu - prevCpu) / elapsed
+                    if gptRate >= gptCpuRate { lastGptActive = now }
+                }
+                if let prevCpu = prevClaudeCpu {
+                    claudeRate = max(0, claudeCpu - prevCpu) / elapsed
+                    if claudeRate >= gptCpuRate { lastClaudeAppActive = now }
+                }
             }
         }
         prevGptCpu = gptCpu
+        prevClaudeCpu = claudeCpu
         prevGptSample = now
-        claudeLast = lastWrite
+        // Claude = most recent of transcript write (Claude Code) or app CPU
+        // activity (regular desktop chats).
+        claudeLast = [lastWrite, lastClaudeAppActive].compactMap { $0 }.max()
         cursorLast = cursorBeat
 
-        let claudeIdle = lastWrite.map { now.timeIntervalSince($0) } ?? .infinity
+        let claudeIdle = claudeLast.map { now.timeIntervalSince($0) } ?? .infinity
         let gptIdle = lastGptActive.map { now.timeIntervalSince($0) } ?? .infinity
         let cursorIdle = cursorBeat.map { now.timeIntervalSince($0) } ?? .infinity
         let working = min(claudeIdle, gptIdle, cursorIdle) < idleThreshold
@@ -197,6 +215,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         if debugStatus {
             log("CHECK working=\(working) claudeIdle=\(Self.describeAgo(claudeIdle)) " +
+                "claudeRate=\(String(format: "%.3f", claudeRate)) " +
                 "gptIdle=\(Self.describeAgo(gptIdle)) gptRate=\(String(format: "%.3f", gptRate)) " +
                 "cursorIdle=\(Self.describeAgo(cursorIdle))")
         }
