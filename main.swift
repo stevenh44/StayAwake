@@ -78,22 +78,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     private var usage: [UsageRow] = []
 
-    private static let awakeIcon = statusIcon("☕️")
-    private static let sleepIcon = statusIcon("💤")
+    // The coffee cup is dark enough to read on any menu bar; the blue zzz
+    // needs the white disc behind it.
+    private static let awakeIcon = statusIcon("☕️", circle: false)
+    private static let sleepIcon = statusIcon("💤", circle: true)
 
-    /// Emoji on a white circle so the indicator stays readable on
+    /// Emoji, optionally on a white circle so it stays readable on
     /// transparent/wallpaper-tinted menu bars.
-    private static func statusIcon(_ emoji: String, side: CGFloat = 20) -> NSImage {
+    private static func statusIcon(_ emoji: String, side: CGFloat = 20, circle: Bool) -> NSImage {
         let size = NSSize(width: side, height: side)
         return NSImage(size: size, flipped: false) { rect in
-            let circle = NSBezierPath(ovalIn: rect.insetBy(dx: side * 0.025, dy: side * 0.025))
-            NSColor.white.setFill()
-            circle.fill()
-            NSColor.black.withAlphaComponent(0.2).setStroke()
-            circle.lineWidth = max(1, side * 0.05)
-            circle.stroke()
+            if circle {
+                let disc = NSBezierPath(ovalIn: rect.insetBy(dx: side * 0.025, dy: side * 0.025))
+                NSColor.white.setFill()
+                disc.fill()
+                NSColor.black.withAlphaComponent(0.2).setStroke()
+                disc.lineWidth = max(1, side * 0.05)
+                disc.stroke()
+            }
             let text = emoji as NSString
-            let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: side * 0.6)]
+            let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: side * (circle ? 0.6 : 0.75))]
             let textSize = text.size(withAttributes: attrs)
             text.draw(at: NSPoint(x: rect.midX - textSize.width / 2,
                                   y: rect.midY - textSize.height / 2),
@@ -104,8 +108,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if CommandLine.arguments.contains("--render-icons") {
-            for (name, icon) in [("awake", Self.statusIcon("☕️", side: 100)),
-                                 ("sleep", Self.statusIcon("💤", side: 100))] {
+            for (name, icon) in [("awake", Self.statusIcon("☕️", side: 100, circle: false)),
+                                 ("sleep", Self.statusIcon("💤", side: 100, circle: true))] {
                 let rep = NSBitmapImageRep(data: icon.tiffRepresentation!)!
                 try? rep.representation(using: .png, properties: [:])?
                     .write(to: URL(fileURLWithPath: "icon-\(name).png"))
