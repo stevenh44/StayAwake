@@ -29,7 +29,7 @@ There's no universal "AI is working" API, so each tool gets the most reliable si
 
 | Tool | Signal |
 |---|---|
-| **Claude** | Claude Code writes session transcripts (`~/.claude/projects/**/*.jsonl`) continuously — fresh write = working. Regular (non-Code) desktop-app chats are caught by a **baseline-relative** CPU watch: some Claude.app installs hum at ~0.6 cores while idle, so instead of an absolute threshold, "working" means CPU rises `0.15` cores above the machine's own rolling 20-minute minimum. Healthy installs detect streaming easily; humming installs simply stay quiet rather than false-flagging. |
+| **Claude** | Claude Code writes session transcripts (`~/.claude/projects/**/*.jsonl`) continuously — fresh write = working. Regular (non-Code) desktop-app chats are caught by a **baseline-relative** CPU watch: some Claude.app installs hum at ~0.6 cores while idle, so instead of an absolute threshold, "working" means CPU rises `0.15` cores above the machine's own rolling 60-minute minimum. Healthy installs detect streaming easily; humming installs simply stay quiet rather than false-flagging. |
 | **ChatGPT app / Codex** | Its log files heartbeat even when idle, so file times are useless — but CPU is ~0% idle and 20–60%+ while streaming. StayAwake measures CPU-time growth of `chatgpt`/`codex` processes between checks. |
 | **Cursor agents** | [Cursor hooks](https://cursor.com/docs) touch a heartbeat file on every agent event (prompt submitted, thought, response, tool use). Fresh heartbeat = working. Manual editing in Cursor does **not** keep the Mac awake. |
 

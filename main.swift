@@ -54,7 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // fully idle (stuck renderer/helper), so an absolute threshold either
     // false-flags those machines or misses real chats on healthy ones.
     // "Working" = rate rises `claudeCpuMargin` above the machine's own
-    // rolling 20-minute minimum. Healthy install: baseline ≈ 0, streaming
+    // rolling 60-minute minimum. Healthy install: baseline ≈ 0, streaming
     // 0.3–0.6 triggers easily. Humming install: baseline ≈ 0.6, idle jitter
     // ≈ ±0.05 stays under the margin, so it just goes quiet (no false ☕️).
     private let claudePattern = ProcessInfo.processInfo.environment["STAYAWAKE_CLAUDE_PATTERN"] ?? "claude"
@@ -242,7 +242,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     let baseline = claudeRateWindow.min() ?? claudeRate
                     if claudeRate > baseline + claudeCpuMargin { lastClaudeAppActive = now }
                     claudeRateWindow.append(claudeRate)
-                    let windowSize = max(2, Int(1200 / checkInterval)) // ~20 minutes
+                    let windowSize = max(2, Int(3600 / checkInterval)) // ~60 minutes
                     if claudeRateWindow.count > windowSize { claudeRateWindow.removeFirst() }
                 }
             }
